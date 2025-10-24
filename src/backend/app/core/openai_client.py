@@ -24,11 +24,12 @@ class OpenAIClient:
         self.backoff_base = 2
         self.total_cost_today = 0.0
 
-        # Pricing (as of Oct 2025)
+        # Pricing (as of Oct 2025) - GPT-5 family
         self.pricing = {
+            "gpt-5-mini": {"input": 0.200 / 1_000_000, "output": 0.800 / 1_000_000},
+            "gpt-5": {"input": 15.0 / 1_000_000, "output": 45.0 / 1_000_000},
             "gpt-4o-mini": {"input": 0.150 / 1_000_000, "output": 0.600 / 1_000_000},
             "gpt-4-turbo": {"input": 10.0 / 1_000_000, "output": 30.0 / 1_000_000},
-            "gpt-4": {"input": 30.0 / 1_000_000, "output": 60.0 / 1_000_000},
             "text-embedding-3-small": {"input": 0.020 / 1_000_000, "output": 0.0},
         }
 
@@ -40,20 +41,24 @@ class OpenAIClient:
         temperature: float = 0.7,
         max_output_tokens: Optional[int] = None,
         response_format: Optional[Dict[str, str]] = None,
+        enable_thinking: bool = False,
+        enable_web_search: bool = False,
     ) -> Dict[str, Any]:
         """
         Call OpenAI Responses API with retry logic
 
         Args:
             input_text: The input prompt
-            model: Model name (gpt-4o-mini, gpt-4-turbo, etc.)
+            model: Model name (gpt-5-mini, gpt-5, etc.)
             instructions: System instructions
             temperature: Sampling temperature (0-2)
             max_output_tokens: Max tokens in response
             response_format: {"type": "json_object"} for JSON mode
+            enable_thinking: Enable reasoning/thinking for GPT-5 (extended thinking)
+            enable_web_search: Enable web search tool for real-time information
 
         Returns:
-            Response dictionary with text, usage, and cost
+            Response dictionary with text, usage, cost, and optional reasoning
         """
         for attempt in range(self.max_retries):
             try:
@@ -72,6 +77,15 @@ class OpenAIClient:
 
                 if response_format:
                     payload["text"] = {"format": response_format}
+
+                # Enable reasoning/thinking for GPT-5
+                if enable_thinking and model.startswith("gpt-5"):
+                    payload["reasoning"] = {"effort": "high"}
+
+                # Enable web search tool
+                if enable_web_search:
+                    payload["tools"] = [{"type": "web_search"}]
+                    payload["tool_choice"] = "auto"
 
                 # Make API call
                 response = await self.client.post(
@@ -145,6 +159,8 @@ class OpenAIClient:
         # Extract output text
         output_items = response.get("output", [])
         text_content = ""
+        reasoning_content = ""
+        web_search_results = []
 
         for item in output_items:
             if item.get("type") == "message":
@@ -153,26 +169,49 @@ class OpenAIClient:
                     if content_item.get("type") == "output_text":
                         text_content += content_item.get("text", "")
 
+            # Extract reasoning/thinking for GPT-5
+            elif item.get("type") == "reasoning":
+                reasoning_content = item.get("content", "")
+
+            # Extract web search results
+            elif item.get("type") == "web_search_call":
+                action = item.get("action", {})
+                web_search_results.append({
+                    "query": action.get("query", ""),
+                    "sources": action.get("sources", [])
+                })
+
         # Extract usage
         usage = response.get("usage", {})
         input_tokens = usage.get("input_tokens", 0)
         output_tokens = usage.get("output_tokens", 0)
+        reasoning_tokens = usage.get("output_tokens_details", {}).get("reasoning_tokens", 0)
 
-        # Calculate cost
+        # Calculate cost (reasoning tokens are included in output tokens)
         model_pricing = self.pricing.get(model, {"input": 0, "output": 0})
         cost = (input_tokens * model_pricing["input"]) + (output_tokens * model_pricing["output"])
 
-        return {
+        result = {
             "text": text_content,
             "usage": {
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
+                "reasoning_tokens": reasoning_tokens,
                 "total_tokens": input_tokens + output_tokens,
             },
             "cost": cost,
             "model": model,
             "response_id": response.get("id"),
         }
+
+        # Add optional fields if present
+        if reasoning_content:
+            result["reasoning"] = reasoning_content
+
+        if web_search_results:
+            result["web_search_results"] = web_search_results
+
+        return result
 
     async def create_embedding(self, text: str, model: str = None) -> list[float]:
         """

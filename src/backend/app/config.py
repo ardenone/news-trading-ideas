@@ -13,9 +13,10 @@ class Settings(BaseSettings):
     # OpenAI API
     OPENAI_API_KEY: str
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
-    OPENAI_CLUSTERING_MODEL: str = "gpt-4o-mini"
-    OPENAI_IDEAS_MODEL: str = "gpt-4-turbo"
+    OPENAI_CLUSTERING_MODEL: str = "gpt-5-mini"  # For grouping headlines
+    OPENAI_IDEAS_MODEL: str = "gpt-5"  # For trading ideas with thinking
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+    ENABLE_WEB_SEARCH: bool = True  # Enable web search for trading ideas
 
     # Application
     APP_NAME: str = "News Trading Ideas"

@@ -5,50 +5,73 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: production
+      args:
+        NODE_ENV: production
+
     container_name: news-trading-ideas
+
     ports:
       - "8000:8000"
-    env_file:
-      - .env
-    environment:
-      - ENVIRONMENT=development
-      - DATABASE_URL=sqlite:///data/news_trading.db
-      - LOG_LEVEL=info
+
     volumes:
-      # Persist database
-      - ./data:/app/data
-      # Mount source code for development (hot reload)
-      - ./backend:/app/backend
-      - ./frontend/dist:/app/backend/static
+      - ./data:/data
+      - ./logs:/app/logs
+      - ./.env:/app/.env:ro
+
+    environment:
+      - APP_NAME=news-trading-ideas
+      - APP_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DATABASE_URL=sqlite+aiosqlite:///./data/news_trading.db
+      - DATABASE_WAL_MODE=true
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      # OpenAI API Configuration - GPT-5 Family
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OPENAI_CLUSTERING_MODEL=${OPENAI_CLUSTERING_MODEL:-gpt-5-mini}
+      - OPENAI_IDEAS_MODEL=${OPENAI_IDEAS_MODEL:-gpt-5}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      - ENABLE_WEB_SEARCH=${ENABLE_WEB_SEARCH:-true}
+      # RSS and Processing Settings
+      - FEED_POLL_INTERVAL=${FEED_POLL_INTERVAL:-300}
+      - AI_PROCESS_INTERVAL=${AI_PROCESS_INTERVAL:-600}
+      - CLUSTERING_BATCH_SIZE=${CLUSTERING_BATCH_SIZE:-40}
+      - TOP_EVENTS_FOR_IDEAS=${TOP_EVENTS_FOR_IDEAS:-10}
+      # Cost Controls
+      - MAX_DAILY_OPENAI_COST=${MAX_DAILY_OPENAI_COST:-5.0}
+      # CORS
+      - ENABLE_CORS=${ENABLE_CORS:-true}
+
     restart: unless-stopped
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-    networks:
-      - news-trading-network
+      start_period: 15s
 
-  # Optional: Add a reverse proxy for production-like setup
-  nginx:
-    image: nginx:alpine
-    container_name: news-trading-nginx
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - app
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
     networks:
-      - news-trading-network
-    profiles:
-      - production
+      - app-network
 
 networks:
-  news-trading-network:
+  app-network:
     driver: bridge
-
-volumes:
-  data:
-    driver: local
+    name: news-trading-ideas-network

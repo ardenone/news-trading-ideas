@@ -1,0 +1,58 @@
+# Development Docker Compose Configuration
+# For local development with hot reload
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+
+    container_name: news-trading-ideas-backend-dev
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - ./src/backend:/app:rw
+      - ./data:/data:rw
+      - ./logs:/app/logs:rw
+      - ./.env:/app/.env:ro
+
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+    networks:
+      - dev-network
+
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile.dev
+
+    container_name: news-trading-ideas-frontend-dev
+
+    ports:
+      - "5173:5173"
+
+    volumes:
+      - ./src/frontend:/app:rw
+      - /app/node_modules
+
+    environment:
+      - VITE_API_URL=http://localhost:8000
+
+    command: npm run dev
+
+    networks:
+      - dev-network
+
+networks:
+  dev-network:
+    driver: bridge
+    name: news-trading-ideas-dev

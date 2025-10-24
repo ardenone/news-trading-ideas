@@ -1,4 +1,4 @@
-"""Event clustering service using OpenAI embeddings and responses"""
+"""Event clustering service using OpenAI embeddings and GPT-5-mini for headline grouping"""
 
 import json
 from datetime import datetime, timedelta
@@ -68,7 +68,7 @@ class ClusteringService:
     async def _cluster_batch(
         self, articles: List[Article], session: AsyncSession
     ) -> List[NewsEvent]:
-        """Cluster a batch of articles using GPT-4o-mini"""
+        """Cluster a batch of articles using GPT-5-mini for efficient headline grouping"""
 
         # Build prompt
         headlines_json = []
@@ -111,10 +111,10 @@ Output Format (JSON only):
 
 Return only valid JSON. No markdown, no explanations."""
 
-        # Call OpenAI Responses API
+        # Call GPT-5-mini via Responses API for fast headline grouping
         response = await openai_client.create_response(
             input_text=prompt,
-            model=self.model,
+            model=self.model,  # gpt-5-mini
             instructions="You are an expert financial news analyst specializing in identifying market-moving events. Output must be valid JSON only.",
             temperature=0.3,
             response_format={"type": "json_object"},

@@ -5,7 +5,7 @@ echo "=========================================="
 echo "News Trading Ideas MVP - Starting..."
 echo "=========================================="
 
-# Wait for any dependencies (if needed)
+# Check environment
 echo "Checking environment..."
 
 # Check if required environment variables are set
@@ -13,49 +13,39 @@ if [ -z "$OPENAI_API_KEY" ]; then
     echo "WARNING: OPENAI_API_KEY not set!"
 fi
 
-if [ -z "$NEWS_API_KEY" ]; then
-    echo "WARNING: NEWS_API_KEY not set!"
-fi
-
 # Create data directory if it doesn't exist
-mkdir -p /app/data
+mkdir -p /data
 
-# Initialize database
+# Initialize database with Python (avoiding shell nesting)
 echo "Initializing database..."
-cd /app/backend
+python3 << 'PYTHON_SCRIPT'
+import sqlite3
+import os
 
-# Run database migrations or initialization
-python -c "
-import sys
-sys.path.insert(0, '/app/backend')
-try:
-    from database import init_db
-    init_db()
-    print('Database initialized successfully')
-except Exception as e:
-    print(f'Database initialization: {e}')
-"
+os.makedirs("/data", exist_ok=True)
+conn = sqlite3.connect("/data/news_trading.db")
+conn.execute("PRAGMA journal_mode=WAL")
+conn.close()
+print("Database initialized successfully")
+PYTHON_SCRIPT
 
 # Check database file
-if [ -f "/app/data/news_trading.db" ]; then
-    echo "Database file exists at /app/data/news_trading.db"
-    ls -lh /app/data/news_trading.db
-else
-    echo "Database file will be created on first run"
+if [ -f "/data/news_trading.db" ]; then
+    echo "Database file exists at /data/news_trading.db"
+    ls -lh /data/news_trading.db
 fi
 
 # Display configuration
 echo "----------------------------------------"
 echo "Configuration:"
-echo "  Environment: ${ENVIRONMENT:-production}"
-echo "  Log Level: ${LOG_LEVEL:-info}"
+echo "  Environment: ${APP_ENV:-production}"
+echo "  Log Level: ${LOG_LEVEL:-INFO}"
 echo "  Database: ${DATABASE_URL:-sqlite:///data/news_trading.db}"
 echo "  Port: 8000"
 echo "----------------------------------------"
 
-# Health check on startup
 echo "Starting application server..."
 echo "=========================================="
 
-# Execute the main command
+# Execute the main command (uvicorn)
 exec "$@"

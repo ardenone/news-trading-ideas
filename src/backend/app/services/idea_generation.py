@@ -1,4 +1,4 @@
-"""Trading ideas generation service using OpenAI GPT-4"""
+"""Trading ideas generation service using OpenAI GPT-5 with thinking and web search"""
 
 import json
 from datetime import datetime, timedelta
@@ -86,15 +86,17 @@ class IdeaGenerationService:
         # Build prompt
         prompt = await self._build_prompt(event, context)
 
-        # Call GPT-4 via Responses API
+        # Call GPT-5 via Responses API with thinking and web search
         try:
             response = await openai_client.create_response(
                 input_text=prompt,
                 model=self.model,
-                instructions="You are an expert trading strategist. Generate actionable trading ideas based on news events. Output must be valid JSON only. If no viable trade idea exists, return {\"no_trade\": true, \"reason\": \"...\"}.",
+                instructions="You are an expert trading strategist. Generate actionable trading ideas based on news events. Use web search to find current market data, company information, and relevant context. Think deeply about market implications. Output must be valid JSON only. If no viable trade idea exists, return {\"no_trade\": true, \"reason\": \"...\"}.",
                 temperature=0.7,
-                max_output_tokens=2000,
+                max_output_tokens=4000,  # Increased for thinking + web search
                 response_format={"type": "json_object"},
+                enable_thinking=True,  # Enable GPT-5 thinking
+                enable_web_search=settings.ENABLE_WEB_SEARCH,  # Enable web search
             )
         except Exception as e:
             logger.error("openai_api_error", event_id=event.event_id, error=str(e))

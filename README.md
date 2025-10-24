@@ -1,175 +1,85 @@
 # News Trading Ideas MVP
 
-AI-powered news clustering and trading ideas generation platform.
-
-## Overview
-
-This platform uses advanced AI to:
-- Cluster related news articles using semantic similarity
-- Generate actionable trading ideas based on news analysis
-- Provide real-time insights for financial decision-making
+AI-powered news clustering and trading ideas generation platform built with FastAPI, React, and OpenAI.
 
 ## Features
 
-- **News Clustering**: Automatically groups related news articles using OpenAI embeddings
-- **Trading Ideas**: Generates trading recommendations based on clustered news
-- **Real-time Updates**: Fetches latest news from multiple sources
-- **RESTful API**: Clean API for integration with other systems
-- **Modern UI**: React-based frontend for easy interaction
-
-## Quick Start
-
-### Using Docker (Recommended)
-
-```bash
-# Clone repository
-git clone https://github.com/ardenone/news-trading-ideas.git
-cd news-trading-ideas
-
-# Configure environment
-cp .env.example .env
-# Edit .env and add your API keys
-
-# Build and run
-docker-compose up -d
-
-# Access application
-open http://localhost:8000
-```
-
-### Local Development
-
-See [DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed setup instructions.
-
-## Architecture
-
-- **Backend**: FastAPI (Python 3.11)
-- **Frontend**: React + Vite
-- **Database**: SQLite (PostgreSQL ready)
-- **AI**: OpenAI GPT-4 + Embeddings
-- **Deployment**: Docker + GitHub Actions
-
-## Documentation
-
-- [Docker Setup](docs/DOCKER.md) - Container setup and usage
-- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
-- [Development Guide](docs/DEVELOPMENT.md) - Local development setup
-- [API Documentation](http://localhost:8000/docs) - OpenAPI/Swagger docs
-
-## API Endpoints
-
-- `GET /` - Frontend application
-- `GET /health` - Health check
-- `POST /api/cluster` - Cluster news articles
-- `POST /api/trading-ideas` - Generate trading ideas
-- `GET /docs` - API documentation
-
-## Environment Variables
-
-Required variables:
-
-```bash
-OPENAI_API_KEY=your_openai_api_key
-NEWS_API_KEY=your_news_api_key
-```
-
-See [.env.example](.env.example) for all available options.
-
-## Testing
-
-```bash
-# Run backend tests
-pytest
-
-# Run with coverage
-pytest --cov=backend --cov-report=html
-
-# Run in Docker
-docker-compose exec app pytest
-```
-
-## CI/CD
-
-GitHub Actions workflow automatically:
-- Builds Docker image on push to main
-- Runs tests and security scans
-- Pushes to GitHub Container Registry
-- Deploys to production (if configured)
-
-See [.github/workflows/docker-build-test.yml](.github/workflows/docker-build-test.yml)
-
-## Deployment
-
-### Quick Deploy Options
-
-- **Docker Compose**: `docker-compose up -d`
-- **Google Cloud Run**: See [DEPLOYMENT.md](docs/DEPLOYMENT.md#google-cloud-run)
-- **AWS EC2**: See [DEPLOYMENT.md](docs/DEPLOYMENT.md#aws-ec2)
-- **Azure Container Instances**: See [DEPLOYMENT.md](docs/DEPLOYMENT.md#azure-container-instances)
-- **Kubernetes**: See [DEPLOYMENT.md](docs/DEPLOYMENT.md#kubernetes-production-scale)
+- **Automatic RSS News Ingestion**: Polls configured RSS feeds every 5 minutes
+- **AI-Powered News Clustering**: Uses OpenAI embeddings to cluster related news articles
+- **Trading Ideas Generation**: Generates actionable trading ideas from news clusters using GPT-4
+- **Real-time Monitoring**: Health checks and system status monitoring
+- **Single Docker Container**: Easy deployment with all services in one container
 
 ## Tech Stack
 
-- **FastAPI** - High-performance Python web framework
-- **React** - Modern frontend library
-- **OpenAI GPT-4** - Advanced language models
-- **Sentence Transformers** - Semantic similarity
-- **SQLite/PostgreSQL** - Database
-- **Docker** - Containerization
-- **GitHub Actions** - CI/CD
+- **Backend**: FastAPI (Python 3.11)
+- **Frontend**: React 18 + Vite
+- **AI/ML**: OpenAI API (embeddings + GPT-4)
+- **Database**: SQLite (development), PostgreSQL-ready
+- **Server**: NGINX reverse proxy + Uvicorn
+- **Container**: Docker with multi-stage build
 
-## Project Structure
+## Quick Start
 
+### Prerequisites
+
+- Docker
+- OpenAI API key
+
+### Running with Docker
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ardenone/news-trading-ideas.git
+cd news-trading-ideas
 ```
-news-trading-ideas/
-├── backend/           # FastAPI backend
-├── frontend/          # React frontend
-├── docs/              # Documentation
-├── .github/workflows/ # CI/CD pipelines
-├── Dockerfile         # Multi-stage build
-├── docker-compose.yml # Local development
-└── README.md          # This file
+
+2. Create `.env` file:
+```bash
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
 ```
 
-## Contributing
+3. Build and run:
+```bash
+docker build -t news-trading-ideas .
+docker run -d \
+  --name news-trading-ideas \
+  -p 8000:8000 \
+  --env-file .env \
+  news-trading-ideas
+```
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+4. Access the application:
+- UI: http://localhost:8000
+- API docs: http://localhost:8000/api/docs
+- Health check: http://localhost:8000/health
 
-## Security
+## Configuration
 
-- Never commit API keys or secrets
-- Use environment variables for configuration
-- Keep dependencies updated
-- Run security scans regularly
+Environment variables (`.env`):
 
-## Performance
+```env
+# Required
+OPENAI_API_KEY=sk-...
 
-- Single container deployment
-- Multi-stage Docker build for optimized image size
-- Efficient API caching
-- Async processing where applicable
+# Optional (with defaults)
+RSS_POLL_INTERVAL=300
+RSS_FEEDS=https://feed1.com,https://feed2.com
+DATABASE_URL=sqlite:///./news.db
+LOG_LEVEL=info
+```
 
-## Support
+## Documentation
 
-- **Issues**: [GitHub Issues](https://github.com/ardenone/news-trading-ideas/issues)
-- **Documentation**: [/docs](/docs)
-- **API Docs**: http://localhost:8000/docs
+- [Architecture](docs/ARCHITECTURE.md) - Detailed system architecture
+- [Project Specification](docs/PROJECT_SPEC.md) - Requirements and features
+- [Progress](docs/PROGRESS.md) - Development status
 
 ## License
 
-MIT License - see LICENSE file for details
-
-## Acknowledgments
-
-- OpenAI for GPT-4 and embeddings
-- FastAPI framework
-- React community
-- News API providers
+MIT
 
 ---
 
-Built with ❤️ for better trading decisions
+Built with [Claude Flow](https://github.com/ruvnet/claude-flow) orchestration
